@@ -39,9 +39,14 @@ add limitation=guest profile=guest-prof
 /user-manager router
 add address=127.0.0.1 name="ROUTER-NAME" shared-secret="PASSWORD"
 
-5)Добавляем скрипт на авторизацию (ROS7 script on userman server) и ставим его в исполнение в 
+5)Добавляем скрипт на авторизацию (ROS7 script on userman server) и ставим его в исполнение в (скорость выполнения и частота зависит от вашей платформы)
+/system script add name=userman
 /system scheduler add disabled=yes interval=30s name=hotspot on-event=\ "/system script run userman" policy=ftp,read,write,policy,test,password,sniff,sensitive start-date=2018-03-14 start-time=13:59:23
+6) В скрипте userman заменяем строку генерации sms для вашего sms провайдера (можно сделать через USB модемы)
+7) Замените папку на hotspot на папку из репозитария
 
-6)(РЕКОМЕНДУЕТСЯ)Сделать правило ежедневного копирования БД UM (Мы ведь обязаны хранить данные 6 месяцев)
+8)(РЕКОМЕНДУЕТСЯ)Сделать правило ежедневного копирования БД UM (Мы ведь обязаны хранить данные 6 месяцев) предварительно настроив /tool email
 ROS7-script UM backup вам поможет с копированием только UM.
 ROS7-script all backup делает копии: Полную копию системы, скриптовую копию и копию базы UM.(копировать конфиги можно реже)
+
+За адаптацию под ROS спасибо Калугину Артёму из компании ООО "Къюсар"
