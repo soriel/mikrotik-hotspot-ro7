@@ -30,7 +30,7 @@
  }
      #Password generation
          :global pass 27394;
-         :set $pass [:rndnum from=0000 to=9999];
+         :set $pass [:rndnum from=1000 to=9999];
          :put "login-$uname passw-$pass";
     :local UMAttributes ("Phone:$uname7");
     :local changepassword [:do {/user-manager user set password=$pass [find name=$uname]} on-error={:log info "hotspot  Script error in change passwd to user to UM"}];
