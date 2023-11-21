@@ -1,0 +1,92 @@
+/ip hotspot profile
+add dns-name=hotspot.shale.msk.ru hotspot-address=192.168.2.1 \
+    http-cookie-lifetime=2h login-by=cookie,http-chap,http-pap,mac-cookie name=\
+    hsprof1 use-radius=yes
+/ip hotspot
+add address-pool=hs-pool-20 interface=bridge-hotspot name=hotspot1 profile=\
+    hsprof1
+/ip hotspot user profile
+set [ find default=yes ] on-login="# Edit in /ip hotspot user profile edit defau\
+    lt on-login \r\
+    \n\r\
+    \n:local nas [/system identity get name];\r\
+    \n\r\
+    \n:local today [/system clock get date];\r\
+    \n\r\
+    \n:local time1 [/system clock get time ];\r\
+    \n\r\
+    \n:local ipuser [/ip hotspot active get [find user=\$user] address];\r\
+    \n\r\
+    \n:local usermac [/ip hotspot active get [find user=\$user] mac-address]\r\
+    \n\r\
+    \n:put \$today\r\
+    \n\r\
+    \n:put \$time1\r\
+    \n\r\
+    \n:local hour [:pick \$time1 0 2]; \r\
+    \n\r\
+    \n:local min [:pick \$time1 3 5]; \r\
+    \n\r\
+    \n:local sec [:pick \$time1 6 8];\r\
+    \n\r\
+    \n:set \$time1 [:put ({hour} . {min} . {sec})] \r\
+    \n\r\
+    \n:local mac1 [:pick \$usermac 0 2];\r\
+    \n\r\
+    \n:local mac2 [:pick \$usermac 3 5];\r\
+    \n\r\
+    \n:local mac3 [:pick \$usermac 6 8];\r\
+    \n\r\
+    \n:local mac4 [:pick \$usermac 9 11];\r\
+    \n\r\
+    \n:local mac5 [:pick \$usermac 12 14];\r\
+    \n\r\
+    \n:local mac6 [:pick \$usermac 15 17];\r\
+    \n\r\
+    \n:set \$usermac [:put ({mac1} . {mac2} . {mac3} . {mac4} . {mac5} . {mac6})\
+    ]\r\
+    \n\r\
+    \n:put \$time1\r\
+    \n\r\
+    \n/ip firewall address-list add list=\$today address=\"hotspot,log-in.\$time\
+    1.\$user.\$usermac.\$ipuser\"\r\
+    \n\r\
+    \n\r\
+    \n\r\
+    \ndo {/tool e-mail send to=\"email@mail.ru\" subject=\"Hotspot Login numb\
+    er: \$user on \$nas\" body=\"Login number: \$user mac-address: \$usermac tim\
+    e: \$time1 ip-address: \$ipuser\"} on-error={};\r\
+    \n\r\
+    \ndo {:log hotspot,account message=\"Hotspot Login number: \$user on \$nas m\
+    ac-address: \$usermac time: \$time1 ip-address: \$ipuser\"};\r\
+    \n" on-logout="# Edit in /ip hotspot user profile edit default on-logout\r\
+    \n\r\
+    \n:local nas [/system identity get name];\r\
+    \n\r\
+    \n:local today [/system clock get date];\r\
+    \n\r\
+    \n:local time1 [/system clock get time ];\r\
+    \n\r\
+    \n:put \$today\r\
+    \n\r\
+    \n:put \$time1\r\
+    \n\r\
+    \n:local hour [:pick \$time1 0 2]; \r\
+    \n\r\
+    \n:local min [:pick \$time1 3 5];\r\
+    \n\r\
+    \n:local sec [:pick \$time1 6 8];\r\
+    \n\r\
+    \n:set \$time1 [:put ({hour} . {min} . {sec})] \r\
+    \n\r\
+    \n:put \$time1\r\
+    \n\r\
+    \n/ip firewall address-list add list=\$today address=\"hotspot.log-out.\$tim\
+    e1.\$user\"\r\
+    \n\r\
+    \n/tool e-mail send to=\"email@mail.ru\" subject=\" Hotspot Logout number\
+    : \$user on \$nas\" body=\"Logout number: \$user time: \$time1\"\r\
+    \n\r\
+    \ndo {:log hotspot,account message=\"Hotspot Logout number: \$user on \$nas \
+    time: \$time1\"};\r\
+    \n"

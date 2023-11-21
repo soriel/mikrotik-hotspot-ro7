@@ -1,0 +1,20 @@
+:local sysname [/system identity get name];
+:local backupfile ("$sysname-backup" . [:pick [/system clock get date] 0 11]);
+/export compact show-sensitive file="$backupfile";
+/system backup save name="$backupfile.backup";
+:if ( [ /file find name=auto_backup_user-manager.umb ] != "" ) do={
+/file remove auto_backup_user-manager.umb;
+};
+/user-manager database save name=auto_backup_user-manager;
+/delay delay-time=10;
+
+/tool e-mail send to="email@gmail.com" subject=("$sysname Export Script ".[ /system clock get date ]." ".[ /system clock get time ]) file="$backupfile.rsc";
+/delay delay-time=10;
+/tool e-mail send to="email@gmail.com" subject=("$sysname Backup Config ".[ /system clock get date ]." ".[ /system clock get time ]) file="$backupfile.backup";
+/delay delay-time=10;
+/tool e-mail send to="email@gmail.com" subject=("$sysname Backup Database User Manager ".[ /system clock get date ]." ".[ /system clock get time ]) file=auto_backup_user-manager.umb;
+/delay delay-time=10;
+
+/file remove auto_backup_user-manager.umb;
+/file remove "$backupfile.backup";
+/file remove "$backupfile.rsc";

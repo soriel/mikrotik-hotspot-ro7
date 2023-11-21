@@ -1,0 +1,61 @@
+#Скрипт адаптирован под ROS 7.11.2 (в ROS6 иное расположение параметров user-manager, а так-же нет команды рандомизатора)
+#Прежде, чем использовать скрипт необходимо в user-manager attributes добавить атрибут Phone, а так-же правило логирования сообщений от user-manager.(остальное смотрите в readme)
+#/user-manager attribute
+#add name=Phone type-id=31 value-type=string vendor-id=Mikrotik
+#/system logging action
+#add name=userman target=memory
+#/system logging
+#add action=userman topics=manager
+# ТЕЛО СКРИПТА
+:foreach line in=[/log find buffer=userman message~"username doesn't exist:" ] do {\
+ :do {:local content [/log get $line message];
+  #:put "content $content";
+  :local pos1 [:find $content "exist: " 0];
+  #:put "pos1 $pos1";
+  :if ($pos1 != " ") do {
+   :local uname "";
+   :local uname7 "";
+   :local phone "";
+    :if ([:pick $content ($pos1+7)] = "9") do { 
+    :set uname [:pick $content ($pos1+7) ($pos1+17)];
+    #:put "uname $uname";
+    :set uname7 [:put ("7" . {$uname})];
+    #:put "uname7 $uname7";
+    #SendTest
+    :local sendtest true;
+    :foreach i in=[/ip firewall address-list print as-value where list=sendsms] do {
+    :if (($i->"address")=$uname7) do {
+    :set $sendtest false;
+     }
+ }
+     #Password generation
+         :global pass 27394;
+         :set $pass [:rndnum from=0000 to=9999];
+         :put "login-$uname passw-$pass";
+    :local UMAttributes ("Phone:$uname7");
+    :local changepassword [:do {/user-manager user set password=$pass [find name=$uname]} on-error={:log info "hotspot  Script error in change passwd to user to UM"}];
+    :local timeoutsendsms [:do {/ip firewall address-list add list="sendsms" address="$uname7" timeout="3m"} on-error={:log info " hotspot Script error in TimeOutSendSms"}];
+    :local putpasschange [:put "PASSchange"]
+    :local putpassnew [:put "Pass New"]
+    # sendsms SMSC.RU
+    :local sendsms [/tool fetch url="https://smsc.ru/sys/send.php?login=USER&psw=PASSWORD&phones=$uname7&mes=password+$pass" keep-result=no];
+    # sendsms MODEM
+    #:local sendsms [/tool sms send usb1 phone-number="$uname7" message="login $uname password $pass" keep-result=no];
+    #Email
+    #:local sendsms [/tool e-mail send to="email@mail.ru" subject="Login $uname password $pass" body="Login $uname password $pass" keep-result=no];
+    :local newuser [:do {/user-manager user add name=$uname password=$pass disabled=no attributes=$UMAttributes } on-error={:log info "hotspot Script error in add to user to UM"}];
+    #:local newuser [:do {/user-manager user add name=$uname password=$pass disabled=no attributes=$UMAttributes } on-error={:log info "hotspot Script error in add to user to UM"}];
+    #Add user to user-manager
+    :if (($sendtest=true)&&[:pick $content ($pos1+17)] != "d") do { \
+    :do {($newuser&&$timeoutsendsms&&$sendsms)} on-error={:log info "hotspot Script error in !d add to user-manager"};
+    }
+     :if (($sendtest=true)&&[:pick $content ($pos1+17)] = "d") do {\
+     :do {($changepassword&&$timeoutsendsms&&$sendsms&&$putpasschange)} on-error={:log info "hotspot Script error in d add to user-manager"};
+         }
+        }
+       }
+      }
+    }
+      /system logging action set userman memory-lines=1;
+      :delay 1
+      /system logging action set userman memory-lines=1000;
