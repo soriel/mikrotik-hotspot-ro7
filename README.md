@@ -17,7 +17,7 @@ ROS7 Log-out script on hotspot profile
 
 3)Настраиваем radius - замените на ip-адрес или fqdn Usermanager:
 /radius
-add accounting-backup=yes address=127.0.0.1 secret="PASSWORD" service=\
+add address=127.0.0.1 secret="PASSWORD" service=\
     hotspot src-address=127.0.0.1
 /radius incoming
 set accept=yes
