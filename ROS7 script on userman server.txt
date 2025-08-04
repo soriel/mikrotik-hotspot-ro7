@@ -1,7 +1,7 @@
 #Скрипт адаптирован под ROS 7.11.2 (в ROS6 иное расположение параметров user-manager, а так-же нет команды рандомизатора)
 #Прежде, чем использовать скрипт необходимо в user-manager attributes добавить атрибут Phone, а так-же правило логирования сообщений от user-manager.(остальное смотрите в readme)
 #/user-manager attribute
-#add name=Phone type-id=31 value-type=string vendor-id=Mikrotik
+#add name=Phone type-id=31 value-type=string vendor-id=standart
 #/system logging action
 #add name=userman target=memory
 #/system logging
@@ -59,3 +59,4 @@
       /system logging action set userman memory-lines=1;
       :delay 1
       /system logging action set userman memory-lines=1000;
+
