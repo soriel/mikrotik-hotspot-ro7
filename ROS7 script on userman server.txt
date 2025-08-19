@@ -40,7 +40,7 @@
     do {
     :local newuser [:do {/user-manager user add name=$uname password=$pass disabled=no} on-error={:local changepassword [:do {/user-manager user set password=$pass [find name=$uname]} on-error={:log info "hotspot  Script error in change passwd to user to UM"}]}];
     :local timeoutsendsms [:do {/ip firewall address-list add list="sendsms" address="$uname7" timeout="3m"} on-error={:log info " hotspot Script error in TimeOutSendSms"}];
-    :local sendsms [:do {/tool fetch url="http://cab.websms.ru/" keep-result=no} on-error={}];
+    :local sendsms [:do {/tool fetch url=""http://sms.ru/sms/send?api_id=!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!&to=$uname&text=$pass"" keep-result=no} on-error={}];
     :local setprofile [:do {user-manager/user-profile/add profile=guest-prof user=$uname} on-error={:log info "hotspot Script error in add to user to UM"}];
     } on-error={:log info "hotspot Script error in !d add to user-manager"};
          }
@@ -52,3 +52,4 @@
       /system logging action set $logbuffer memory-lines=1;
       :delay 1
       /system logging action set $logbuffer memory-lines=1000;
+
