@@ -10,9 +10,9 @@
 
 :local usermac [/ip hotspot active get [find user=$user] mac-address]
 
-:put $today
+#:put $today
 
-:put $time1
+#:put $time1
 
 :local hour [:pick $time1 0 2]; 
 
@@ -36,12 +36,12 @@
 
 :set $usermac [:put ({mac1} . {mac2} . {mac3} . {mac4} . {mac5} . {mac6})]
 
-:put $time1
+#:put $time1
 
-/ip firewall address-list add list=$today address="log-in.$time1.$user.$usermac.$ipuser"
+#/ip firewall address-list add list=$today address="log-in.$time1.$user.$usermac.$ipuser"
 
 
 
-do {/tool e-mail send to="email@gmail.com" subject="Login number: $user on $nas" body="Login number: $user mac-address: $usermac time: $time1 ip-address: $ipuser"} on-error={};
+#do {/tool e-mail send to="email@gmail.com" subject="Login number: $user on $nas" body="Login number: $user mac-address: $usermac time: $time1 ip-address: $ipuser"} on-error={};
 
-#do {:log hotspot,account message="Hotspot Login number: $user on $nas mac-address: $usermac time: $time1 ip-address: $ipuser"};
+do {:log info message="Hotspot Login number: $user on $nas mac-address: $usermac time: $time1 ip-address: $ipuser"};
