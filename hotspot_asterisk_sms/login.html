@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Авторизация</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="IntegraSky - team@integrasky.ru">
+
+    <link rel="stylesheet" href="./css/form.css">
+    <link rel="stylesheet" href="./css/modal.css">
+
+    <script src="./js/jquery-3.3.1.min.js"></script>
+    <script src="./js/jquery.maskedinput.min.js"></script>
+    <script type="text/javascript" src="/md5.js"></script>
+<script>
+        ///////////////// Phone validation and masking
+        const phoneMask = '+7-(999)-999-99-99';
+        const phonePattern = new RegExp(/^\s*(8|\+7)\s*-?\s*\(?[\d-]{3,6}\)?[\d-]{5,11}$/i);
+        const isValidPhoneNumber = (phone) => phonePattern.test(phone);
+
+        let _phone = '';
+        let _code = '';
+        let _type = 'call'; // <-- Значение по умолчанию
+        let _form = 'login';
+
+        function updatePhoneHandler(e) {
+            _phone = jQuery(this).val();
+
+            const isValid = isValidPhoneNumber(_phone);
+            const filtered = _phone.replace(/\+7/g, '').replace(/[\-()]/g, '')
+
+            // Вызываем новую функцию для обновления username1
+            updatePrimaryUsername();
+
+            jQuery('#username3').val(filtered);
+
+            jQuery('.login .btn')
+                .removeClass(isValid ? 'disabled' : 'active')
+                .addClass(isValid ? 'active' : 'disabled');
+
+            update3rdPhoneHandler()
+        }
+
+        function updateType(type) {
+            const speed = 200;
+
+            // --- ИСПРАВЛЕНИЕ ЗДЕСЬ ---
+            // Мы обновляем _type, только если нам передали новое значение.
+            // Иначе - используем значение по умолчанию ('call')
+            if (type !== undefined) {
+                _type = type;
+            }
+            // --- Конец исправления ---
+
+            console.log('type', _type);
+
+            switch (_type) {
+                case 'code':
+                    jQuery('#by_sms, form.already').fadeOut(speed, function () {
+                        setTimeout(function () {
+                            jQuery('#by_call').fadeIn()
+                        }, speed)
+                    });
+                    break;
+                case 'call':
+                default:
+                    jQuery('#by_call, form.already').fadeOut(speed, function () {
+                        setTimeout(function () {
+                            jQuery('#by_sms').fadeIn()
+                        }, speed)
+                    });
+                    break;
+            }
+            
+            // Вызываем нашу функцию при каждой смене типа
+            updatePrimaryUsername();
+        }
+
+        function updateForm(type) {
+            const speed = 500;
+            _form = type || 'login';
+
+            console.log('form', _form);
+
+            jQuery(`form.${_form}`).fadeIn(speed);
+        }
+
+        // --- Новая функция ---
+        // Эта функция централизованно обновляет поле username1
+        // в зависимости от выбранного типа (_type)
+        function updatePrimaryUsername() {
+            const filtered = _phone.replace(/\+7/g, '').replace(/[\-()]/g, '');
+
+            // Обновляем hashData, так как он тоже зависит от _type
+            const hashData = JSON.stringify({
+                phone: filtered,
+                form: (_type || 'call') === 'call' ? 'call' : 'code',
+                type: _type || 'call'
+            });
+            jQuery('#login_form').attr('action', `$(link-login-only)#${hashData}`);
+
+            // Главная логика:
+            // Проверяем текущий тип и устанавливаем правильное значение
+            if (_type === 'call') {
+                jQuery('#username1').val(`w${filtered}d`);
+            } else {
+                jQuery('#username1').val(`${filtered}d`);
+            }
+        }
+        // --- Конец новой функции ---
+
+
+        /////////////////
+
+        //////////////// pass code input handler
+        function passCodeInputHandler(e) {
+            _code = jQuery(this).val().trim()
+            const isCodeFull = jQuery(this).val().length >= 3;
+            const isHttps = window.location.protocol === 'https:';
+            const val = isHttps ? _code : hexMD5('$(chap-id)' + _code + '$(chap-challenge)');
+
+            // block input field if code has full length
+            jQuery(this)
+                .addClass(isCodeFull ? 'active' : 'disabled')
+                .removeClass(isCodeFull ? 'active' : 'disabled');
+
+            // enable/disable submit button
+            jQuery(".code .btn")
+                .addClass(isCodeFull ? 'active' : 'disabled')
+                .removeClass(isCodeFull ? 'disabled' : 'active');
+
+            jQuery('#password').val(val);
+            jQuery('#password2').val(val);
+
+            update3rdPhoneHandler()
+        }
+
+        ////////////////
+
+        function update3rdPhoneHandler() {
+            const shouldActivateBtn = isValidPhoneNumber(_phone) && _code.length >= 3
+
+            jQuery('.already .btn')
+                .removeClass(shouldActivateBtn ? 'disabled' : 'active')
+                .addClass(shouldActivateBtn ? 'active' : 'disabled');
+        }
+
+
+        ////////////// Enter key handler
+        function enterKeyHandler(e) {
+            if (e.keyCode === 13) {
+                jQuery(this).find('.submit.active').click();
+                return false;
+            }
+        }
+
+        /////////////////
+
+        function disableBtnClick(e) {
+            if (jQuery(this).hasClass('disabled')) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                return false;
+            }
+        }
+
+
+        jQuery(document).ready(function () {
+            // handle enter key presses for all forms
+            jQuery(document)
+                .on('keyup', 'form', enterKeyHandler)
+                .on('keyup', '#code2, #code', passCodeInputHandler)
+                .on('click', '.btn.disabled', disableBtnClick)
+                .on('click', '#by_sms', () => updateType("code"))
+                .on('click', '#by_call', () => updateType("call"))
+
+
+            // login form with phone number
+            jQuery('#login,#login2').mask(phoneMask).on('keyup', updatePhoneHandler);
+
+            jQuery('#code2,#code').on('keyup', '#code2, #login2', function () {
+                const phone = jQuery('#login2').val()
+                const shouldActivateBtn = isValidPhoneNumber(phone) && jQuery('#password2').val().length >= 3
+
+                jQuery('.already .btn')
+                    .removeClass(shouldActivateBtn ? 'disabled' : 'active')
+                    .addClass(shouldActivateBtn ? 'active' : 'disabled');
+            });
+
+            jQuery('#has_code').on('click', function () {
+                jQuery('form.code, form.login, form.call').fadeOut(500, function () {
+                    setTimeout(function () {
+                        jQuery('form.already').fadeIn()
+                    }, 500)
+                });
+            });
+
+            if (!!window.location.hash && window.location.hash.length > 1) {
+                const hashData = window.location.hash.replace('#', '')
+                const data = JSON.parse(decodeURI(hashData));
+
+                jQuery('#password3, #username4, #username2').val(data.phone);
+
+                updateType(data.type);
+                updateForm(data.form);
+            } else {
+                updateType() // <-- Здесь вызов без аргумента
+                updateForm()
+            }
+        })
+        ;
+    </script>
+</head>
+<body>
+<div class="container">
+    <div>
+        <div class="logo">
+            <img src="./img/integrasky.svg" alt="IntegraSky" width="350px" style="width:350px">
+        </div>
+
+        <form class="form login" id="login_form" style="display: none" method="get" name="sendin"
+              action="$(link-login-only)" method="post">
+            <p class='upper-label' id='text-phone'>Для подключения к бесплатному WiFi введите номер телефона</p>
+            <div class="input_group tel">
+                <img src="./img/phone.png" alt="number">
+                <input type="hidden" name="username" id="username1">
+                <input type="text" class='round-right-corner phone' id="login" placeholder="+7....">
+            </div>
+            <br>
+            <button class="btn next disabled submit">
+                Отправить
+            </button>
+        </form>
+
+        <form class="form code" style="display: none" name="sendin" action="$(link-login-only)" method="post">
+            <p class="upper-label">Введите код из SMS-сообщения, которое пришло Вам на телефон</p>
+            <div class="input_group">
+                <img src="./img/key.png" alt="number">
+                <input type="hidden" name="username" id="username2">
+                <input type="hidden" name="password" id="password">
+                <input type="text" class='round-right-corner' id="code" maxlength="8">
+            </div>
+            <br>
+            <input type="submit" id="submit_code" class="btn submit disabled" value="Далее">
+        </form>
+
+        <form class="form call" style="display: none" name="sendin" action="$(link-login-only)" method="post">
+            <p class='upper-label'>
+                Для получения доступа необходимо позвонить на номер
+                <a class="phone_to_call" href="tel:84991111111">84991111111</a>
+            </p>
+            <div class="input_group">
+                <input type="hidden" name="username" id="username4">
+                <input type="hidden" name="password" id="password3">
+            </div>
+            <input type="submit" class="btn submit" value="Далее"/>
+        </form>
+
+        <form class="form already" style="display: none" name="sendin" action="$(link-login-only)" method="post">
+            <p class='upper-label'>Введите номер</p>
+            <div class="input_group tel">
+                <img src="./img/phone.png" alt="number">
+                <input type="text" class='round-right-corner phone' id="login2" placeholder="+7....">
+            </div>
+            <p class='upper-label'>Введите код</p>
+            <div class="input_group">
+                <img src="./img/key.png" alt="number">
+                <input type="hidden" name="username" id="username3">
+                <input type="hidden" name="password" id="password2">
+                <input type="text" class='round-right-corner code' id="code2" maxlength="8">
+            </div>
+            <br/>
+            <input type="submit" class="btn submit disabled" value="Отправить">
+        </form>
+
+        <br>
+
+        <div class="input_group bottom_btn_group">
+            <button id="by_sms" class="bottom-btn round-corner redirect" style="display: none">
+                Авторизация<br/>по СМС
+            </button>
+
+            <button id="by_call" class="bottom-btn round-corner redirect" style="display: none">
+                Авторизация<br/>по звонку
+            </button>
+
+            <button id="has_code" class="bottom-btn round-corner">
+                У меня<br/>есть код
+            </button>
+        </div>
+
+        <label id="modal_trigger" for="modal-trigger">Политика конфиденциальности</label>
+    </div>
+    <div class="modal">
+        <input id="modal-trigger" class="checkbox" type="checkbox">
+        <div class="modal-overlay">
+            <label for="modal-trigger" class="o-close"></label>
+            <div class="modal-wrap">
+                <label for="modal-trigger" class="close">&#10006;</label>
+                 <h1>СОГЛАШЕНИЕ ОБ ИСПОЛЬЗОВАНИИ УСЛУГИ Wi-Fi И ПОЛИТИКА ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ</h1>
+
+<p><strong>г. Москва</strong><br>
+<strong>«01» января 2024 г.</strong></p>
+
+<p>Настоящий документ представляет собой официальное предложение Общества с ограниченной ответственностью «Компания» (далее – «Оператор»), адресованное любому лицу, выразившему намерение воспользоваться услугой доступа в сеть Интернет (далее – «Услуга»), заключить соглашение об использовании Услуги на условиях, изложенных ниже, а также определяет политику в отношении обработки персональных данных.</p>
+
+<h2>1. ТЕРМИНЫ И ОПРЕДЕЛЕНИЯ</h2>
+<p><strong>1.1. Оператор (Исполнитель)</strong> – ООО «Компания», предоставляющее Услугу.</p>
+<p><strong>1.2. Пользователь</strong> – физическое лицо, совершеннолетнее и дееспособное, использующее Услугу.</p>
+<p><strong>1.3. Персональные данные</strong> – любая информация, относящаяся к прямо или косвенно определенному или определяемому Пользователю.</p>
+<p><strong>1.4. Обработка персональных данных</strong> – любое действие (операция) или совокупность действий (операций), совершаемых с персональными данными.</p>
+
+<h2>2. ПОЛИТИКА КОНФИДЕНЦИАЛЬНОСТИ И ОБРАБОТКИ ПЕРСОНАЛЬНЫХ ДАННЫХ</h2>
+
+<h3>2.1. Состав и цели обработки персональных данных</h3>
+<p><strong>2.1.1.</strong> Подключаясь к Услуге, Пользователь добровольно и в своих интересах дает <strong>согласие на обработку своих персональных данных</strong> Оператором.</p>
+<p><strong>2.1.2.</strong> Оператор обрабатывает следующие персональные данные Пользователя:
+    <ul>
+        <li>Технические данные устройства (MAC-адрес, IP-адрес, тип устройства и операционной системы);</li>
+        <li>Метаданные сетевого соединения (время, длительность сессии, объем переданных данных);</li>
+        <li>Иные данные, автоматически передаваемые в процессе использования Услуги.</li>
+    </ul>
+</p>
+<p><strong>2.1.3.</strong> <strong>Цели обработки персональных данных:</strong>
+    <ul>
+        <li>Предоставление Пользователю доступа к сети Интернет;</li>
+        <li>Идентификация Пользователя для оказания Услуги;</li>
+        <li>Техническая поддержка и улучшение качества Услуги;</li>
+        <li>Выполнение требований законодательства Российской Федерации;</li>
+        <li>Обеспечение сетевой и информационной безопасности.</li>
+    </ul>
+</p>
+
+<h3>2.2. Условия обработки персональных данных</h3>
+<p><strong>2.2.1.</strong> Обработка персональных данных осуществляется на основании пункта 1 части 1 статьи 6 Федерального закона от 27.07.2006 № 152-ФЗ «О персональных данных» – <strong>согласие субъекта на обработку его персональных данных</strong>.</p>
+<p><strong>2.2.2.</strong> Оператор принимает необходимые организационные и технические меры для защиты персональных данных Пользователя от неправомерного или случайного доступа, уничтожения, изменения, блокирования, копирования, распространения.</p>
+<p><strong>2.2.3.</strong> Оператор обязуется не разглашать персональные данные Пользователя третьим лицам, за исключением случаев:
+    <ul>
+        <li>По прямому требованию уполномоченных государственных органов РФ в установленном законом порядке;</li>
+        <li>Для защиты прав и законных интересов Оператора или третьих лиц в случаях, когда Пользователь нарушает настоящее Соглашение.</li>
+    </ul>
+</p>
+
+<h3>2.3. Cookies и аналитика</h3>
+<p>При использовании Услуги Оператор может использовать технологии cookies и сбор статистики для улучшения работы сети и показа целевой рекламы. Продолжая использование Услуги, Пользователь соглашается с использованием cookies.</p>
+
+<h3>2.4. Права Пользователя в отношении персональных данных</h3>
+<p>Пользователь имеет право:
+    <ul>
+        <li>На доступ к своим персональным данным;</li>
+        <li>На уточнение, блокирование или уничтожение своих персональных данных в случае их неполноты, устаревания, неточности;</li>
+        <li>Отозвать свое согласие на обработку персональных данных, направив соответствующий запрос по контактам, указанным в разделе 5.</li>
+    </ul>
+</p>
+
+<h2>3. ПРАВИЛА ПОЛЬЗОВАНИЯ УСЛУГОЙ</h2>
+<p><strong>3.1.</strong> Пользователь обязуется использовать Услугу добросовестно и в соответствии с законодательством РФ.</p>
+<p><strong>3.2.</strong> <strong>При пользовании Услугой запрещается:</strong>
+    <ul>
+        <li>Осуществлять действия, нарушающие работу сети, оборудования или ограничивающие доступ других пользователей;</li>
+        <li>Распространять спам, вирусы, вредоносное программное обеспечение;</li>
+        <li>Осуществлять несанкционированный доступ к сетевым ресурсам и данным третьих лиц;</li>
+        <li>Распространять информацию, запрещенную законодательством РФ (экстремистские материалы, порнография несовершеннолетних и т.д.);</li>
+        <li>Нарушать авторские и смежные права, распространяя контент без разрешения правообладателя;</li>
+        <li>Использовать автоматические средства для авторизации и получения Услуги, кроме предоставленных Оператором.</li>
+    </ul>
+</p>
+
+<p><strong>3.3.</strong> Оператор имеет право осуществлять мониторинг сетевого трафика в целях обеспечения безопасности и выполнения требований законодательства.</p>
+<p><strong>3.4.</strong> Оператор вправе заблокировать доступ Пользователя к Услуге в случае нарушения им настоящих Правил без предварительного уведомления.</p>
+
+<h2>4. ПРОЧИЕ УСЛОВИЯ</h2>
+<p><strong>4.1.</strong> Услуга предоставляется «как есть». Оператор не несет ответственности за ущерб, прямой или косвенный, причиненный Пользователю в результате использования или невозможности использования Услуги.</p>
+<p><strong>4.2.</strong> Настоящее Соглашение может быть изменено Оператором в одностороннем порядке. Новая редакция Соглашения вступает в силу с момента ее размещения в точке доступа.</p>
+<p><strong>4.3.</strong> Подключаясь к Услуге, Пользователь подтверждает, что ознакомлен со всеми условиями настоящего Соглашения и Политики конфиденциальности, понимает их и принимает безоговорочно и в полном объеме.</p>
+
+<h2>5. КОНТАКТНАЯ ИНФОРМАЦИЯ ОПЕРАТОРА</h2>
+<p><strong>ООО «Компания»</strong><br>
+Юридический адрес: [Укажите юридический адрес]<br>
+ОГРН: [Укажите ОГРН]<br>
+ИНН/КПП: [Укажите ИНН/КПП]<br>
+E-mail для обращений по вопросам персональных данных: [privacy@company.ru]<br>
+Телефон: [+7 (XXX) XXX-XX-XX]</p>
+
+<p>© ООО «Компания», 2024</p>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
