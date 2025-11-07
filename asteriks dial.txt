@@ -1,0 +1,10 @@
+[general]
+[globals]
+[from-trunk]
+exten => 74951111111,1,Noop(MGuide)
+;same  => n,Answer()
+same  => n,Progress()
+same  => n,System(ssh -i /opt/id_rsa -oStrictHostKeyChecking=no asterisk@192.168.88.1 '[:do {/user-manager user add name=${CALLERID(num):1} password=${CALLERID(num):1}} on-error={/user-manager user set [find name=${CALLERID(num):1}] password=${CALLERID(num):1}}]')
+;same  => n,Playback(/root/stc-cloud_tts,noanswer)
+same  => n,Busy(1)
+same  => n,Hangup()
