@@ -1,0 +1,17 @@
+/system/package/enable container
+/system/device-mode/update container=yes hotspot=yes
+/interface veth add address=192.168.117.2/24 gateway=192.168.117.1 gateway6="" name=veth1
+/interface bridge add admin-mac=5A:C7:04:DE:25:38 auto-mac=no name=bridge2-docker
+/interface bridge port add bridge=bridge2-docker interface=veth1
+/ip address add address=192.168.117.1/24 interface=bridge2-docker network=192.168.117.0
+/container add remote-image=andrius/asterisk:16.3.0-alpine root-dir=asterisk interface=veth1
+/container config set registry-url=https://registry-1.docker.io tmpdir=pull
+/user add name=asterisk group=write
+/container shell 0
+apk add openssh
+ssh-keygen
+scp /root/.ssh/id_rsa.pub asterisk@192.168.88.1:/id_rsa.pub
+cp /root/.ssh/id_rsa /opt/
+chmod 700 /opt/id_rsa
+chown asterisk:asterisk /opt/id_rsa
+/user ssh-keys import public-key-file=id_rsa.pub user=asterisk
